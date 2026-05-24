@@ -78,7 +78,8 @@ if role == "Pimpinan":
         "Menu",
         [
             "Dashboard",
-            "Early Warning"
+            "Early Warning",
+            "Prediksi Data Real"
         ]
     )
 
@@ -229,6 +230,143 @@ elif role == "Pimpinan" and menu == "Early Warning":
     - Evaluasi progres skripsi
     - Konsultasi dengan dosen wali
     """)
+
+# =========================
+# PREDIKSI DATA REAL
+# =========================
+
+elif role == "Pimpinan" and menu == "Prediksi Data Real":
+
+    st.title("📊 Prediksi Data Real Angkatan 2023")
+
+    uploaded_file = st.file_uploader(
+        "Upload File CSV",
+        type=["csv"]
+    )
+
+    if uploaded_file is not None:
+
+        # =========================
+        # LOAD DATA
+        # =========================
+
+        data_real = pd.read_csv(
+            uploaded_file
+        )
+
+        st.subheader("Dataset Real")
+
+        st.dataframe(data_real)
+
+        # =========================
+        # PREPROCESSING
+        # =========================
+
+        # Encoding Status Skripsi
+        status_map = {
+            "Belum": 0,
+            "Judul ACC": 1,
+            "Sempro": 2,
+            "Semhas": 3,
+            "Skripsi": 4
+        }
+
+        data_real['Status_Skripsi'] = (
+            data_real['Status_Skripsi']
+            .map(status_map)
+        )
+
+        # =========================
+        # FEATURE ENGINEERING
+        # =========================
+
+        data_real['Rata_Rata_IP'] = (
+            data_real['IPS_S1'] +
+            data_real['IPS_S2'] +
+            data_real['IPS_S3'] +
+            data_real['IPS_S4']
+        ) / 4
+
+        data_real['Progress_SKS'] = (
+            data_real['SKS_Lulus'] / 144
+        )
+
+        data_real['Tren_IP'] = (
+            data_real['IPS_S4'] -
+            data_real['IPS_S1']
+        )
+
+        # =========================
+        # PREDIKSI
+        # =========================
+
+        hasil_prediksi = model.predict(
+            data_real
+        )
+
+        # =========================
+        # HASIL
+        # =========================
+
+        data_real['Prediksi'] = hasil_prediksi
+
+        # Konversi label
+        data_real['Prediksi'] = (
+            data_real['Prediksi']
+            .map({
+                1: 'Ontime',
+                0: 'Tidak Ontime'
+            })
+        )
+
+        st.subheader("Hasil Prediksi")
+
+        st.dataframe(data_real)
+
+        # =========================
+        # MAHASISWA RISIKO
+        # =========================
+
+        risiko = data_real[
+            data_real['Prediksi']
+            == 'Tidak Ontime'
+        ]
+
+        st.subheader(
+            "⚠️ Mahasiswa Berisiko"
+        )
+
+        st.dataframe(risiko)
+
+        # =========================
+        # GRAFIK
+        # =========================
+
+        st.subheader(
+            "Grafik Hasil Prediksi"
+        )
+
+        fig, ax = plt.subplots()
+
+        sns.countplot(
+            data=data_real,
+            x='Prediksi',
+            ax=ax
+        )
+
+        st.pyplot(fig)
+
+        # =========================
+        # REKOMENDASI
+        # =========================
+
+        st.warning("""
+        Rekomendasi:
+        - Tingkatkan monitoring akademik
+        - Tambahkan intensitas bimbingan
+        - Evaluasi progres skripsi
+        - Konsultasi dengan dosen wali
+        """)
 
 # =========================
 # MENU MAHASISWA
